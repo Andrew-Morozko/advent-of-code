@@ -14,11 +14,12 @@ pub fn data_dir() -> Result<PathBuf> {
         );
     }
     task_data_dir.push("data");
-    let cur_exe = std::env::current_exe().context("Can't determine current executable")?;
-    let name = cur_exe
-        .file_name()
-        .context("Can't determine current executable's name")?;
-    task_data_dir.push(name);
+    task_data_dir.push(
+        std::env::current_exe()
+            .context("Can't determine current executable")?
+            .file_name()
+            .context("Can't determine current executable's name")?,
+    );
     if !task_data_dir.is_dir() {
         bail!("Task data dir not found at {}", task_data_dir.display());
     }
