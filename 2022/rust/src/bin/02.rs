@@ -9,12 +9,6 @@ trait Score {
     fn score(self) -> u64;
 }
 
-impl Score for Move {
-    fn score(self) -> u64 {
-        self as u64
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u64)]
 enum Move {
@@ -23,33 +17,40 @@ enum Move {
     Scissors = 3,
 }
 
+impl Score for Move {
+    fn score(self) -> u64 {
+        #![allow(clippy::as_conversions)]
+        self as u64
+    }
+}
+
 impl FromStr for Move {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "A" | "X" => Move::Rock,
-            "B" | "Y" => Move::Paper,
-            "C" | "Z" => Move::Scissors,
+            "A" | "X" => Self::Rock,
+            "B" | "Y" => Self::Paper,
+            "C" | "Z" => Self::Scissors,
             _ => bail!("Incorrect move: '{s}'"),
         })
     }
 }
 
-impl From<(Move, Outcome)> for Move {
-    fn from(p: (Move, Outcome)) -> Self {
+impl From<(Self, Outcome)> for Move {
+    fn from(p: (Self, Outcome)) -> Self {
         let (opp, result) = p;
         match result {
             Outcome::Loss => match opp {
-                Move::Rock => Move::Scissors,
-                Move::Paper => Move::Rock,
-                Move::Scissors => Move::Paper,
+                Self::Rock => Self::Scissors,
+                Self::Paper => Self::Rock,
+                Self::Scissors => Self::Paper,
             },
             Outcome::Draw => opp,
             Outcome::Win => match opp {
-                Move::Rock => Move::Paper,
-                Move::Paper => Move::Scissors,
-                Move::Scissors => Move::Rock,
+                Self::Rock => Self::Paper,
+                Self::Paper => Self::Scissors,
+                Self::Scissors => Self::Rock,
             },
         }
     }
@@ -65,6 +66,7 @@ enum Outcome {
 
 impl Score for Outcome {
     fn score(self) -> u64 {
+        #![allow(clippy::as_conversions)]
         self as u64
     }
 }
