@@ -1,38 +1,37 @@
 use anyhow::{bail, Context, Result};
 use aoc::open;
-use std::io::{prelude::*, BufReader};
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum Move {
-    Rock,
-    Paper,
-    Scissors,
-}
+use std::{
+    io::{prelude::*, BufReader},
+    str::FromStr,
+};
 
 trait Score {
-    fn score(&self) -> u64;
+    fn score(self) -> u64;
 }
 
 impl Score for Move {
-    fn score(&self) -> u64 {
-        match self {
-            // score for the shape you selected (1 for Rock, 2 for Paper, and 3 for Scissors)
-            Move::Rock => 1,
-            Move::Paper => 2,
-            Move::Scissors => 3,
-        }
+    fn score(self) -> u64 {
+        self as u64
     }
 }
 
-impl TryFrom<&str> for Move {
-    type Error = anyhow::Error;
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u64)]
+enum Move {
+    Rock = 1,
+    Paper = 2,
+    Scissors = 3,
+}
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Ok(match value {
+impl FromStr for Move {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
             "A" | "X" => Move::Rock,
             "B" | "Y" => Move::Paper,
             "C" | "Z" => Move::Scissors,
-            _ => bail!("Incorrect move: '{value}'"),
+            _ => bail!("Incorrect move: '{s}'"),
         })
     }
 }
@@ -57,21 +56,16 @@ impl From<(Move, Outcome)> for Move {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u64)]
 enum Outcome {
-    Loss,
-    Draw,
-    Win,
+    Loss = 0,
+    Draw = 3,
+    Win = 6,
 }
 
 impl Score for Outcome {
-    fn score(&self) -> u64 {
-        match self {
-            // score for the outcome of the round
-            // (0 if you lost, 3 if the round was a draw, and 6 if you won).
-            Outcome::Loss => 0,
-            Outcome::Draw => 3,
-            Outcome::Win => 6,
-        }
+    fn score(self) -> u64 {
+        self as u64
     }
 }
 
@@ -87,15 +81,15 @@ impl From<(Move, Move)> for Outcome {
     }
 }
 
-impl TryFrom<&str> for Outcome {
-    type Error = anyhow::Error;
+impl FromStr for Outcome {
+    type Err = anyhow::Error;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Ok(match value {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
             "X" => Self::Loss,
             "Y" => Self::Draw,
             "Z" => Self::Win,
-            _ => bail!("Incorrect outcome: '{value}'"),
+            _ => bail!("Incorrect outcome: '{s}'"),
         })
     }
 }
@@ -120,14 +114,14 @@ fn score_tournament(parse_game: impl Fn(&str, &str) -> Result<(Move, Outcome)>) 
 
 fn part1() -> Result<u64> {
     score_tournament(|opp: &str, me: &str| {
-        let (opp, me) = (Move::try_from(opp)?, Move::try_from(me)?);
+        let (opp, me) = (opp.parse::<Move>()?, me.parse::<Move>()?);
         Ok((me, Outcome::from((me, opp))))
     })
 }
 
 fn part2() -> Result<u64> {
     score_tournament(|opp: &str, outcome: &str| {
-        let (opp, outcome) = (Move::try_from(opp)?, Outcome::try_from(outcome)?);
+        let (opp, outcome) = (opp.parse::<Move>()?, outcome.parse::<Outcome>()?);
         let me = Move::from((opp, outcome));
         Ok((me, outcome))
     })
