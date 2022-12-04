@@ -5,7 +5,19 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 
-pub fn data_dir() -> Result<PathBuf> {
+#[macro_export]
+macro_rules! open {
+    ($file_name:expr) => {{
+        $crate::open_file(file!(), $file_name)
+    }};
+}
+
+#[inline]
+pub fn open_file(src_file: &str, file_name: impl AsRef<Path>) -> Result<File> {
+    File::open(resolve_file(src_file, file_name)?).context("Can't open file")
+}
+
+fn resolve_file(src_file: &str, file_name: impl AsRef<Path>) -> Result<PathBuf> {
     let mut task_data_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     if !task_data_dir.pop() {
         bail!(
@@ -15,19 +27,13 @@ pub fn data_dir() -> Result<PathBuf> {
     }
     task_data_dir.push("data");
     task_data_dir.push(
-        std::env::current_exe()
-            .context("Can't determine current executable")?
-            .file_name()
-            .context("Can't determine current executable's name")?,
+        Path::new(src_file)
+            .file_stem()
+            .context("Can't determine AoC day")?,
     );
     if !task_data_dir.is_dir() {
         bail!("Task data dir not found at {}", task_data_dir.display());
     }
+    task_data_dir.push(file_name);
     Ok(task_data_dir)
-}
-
-pub fn open(file_name: impl AsRef<Path>) -> Result<File> {
-    let mut path = data_dir()?;
-    path.push(file_name);
-    File::open(path).context("Can't open file")
 }

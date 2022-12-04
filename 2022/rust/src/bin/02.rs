@@ -1,6 +1,7 @@
 use anyhow::{bail, Context, Result};
 use aoc::open;
 use std::{
+    fs::File,
     io::{prelude::*, BufReader},
     str::FromStr,
 };
@@ -96,33 +97,36 @@ impl FromStr for Outcome {
     }
 }
 
-fn score_tournament(parse_game: impl Fn(&str, &str) -> Result<(Move, Outcome)>) -> Result<u64> {
-    let r = BufReader::new(open("input.txt")?);
+fn score_tournament(
+    f: File,
+    parse_game: impl Fn(&str, &str) -> Result<(Move, Outcome)>,
+) -> Result<u64> {
+    let reader = BufReader::new(f);
 
     let mut sum = 0;
 
-    for l in r.lines() {
-        let l = l.context("Failed to read line")?;
-        let l = l.trim();
-        if l.is_empty() {
+    for l in reader.lines() {
+        let line = l.context("Failed to read line")?;
+        let line = line.trim();
+        if line.is_empty() {
             continue;
         }
-        let (a, b) = l.split_once(' ').context("Failed to split the line")?;
+        let (a, b) = line.split_once(' ').context("Failed to split the line")?;
         let (my_move, outcome) = parse_game(a, b)?;
         sum += my_move.score() + outcome.score();
     }
     Ok(sum)
 }
 
-fn part1() -> Result<u64> {
-    score_tournament(|opp: &str, me: &str| {
+fn part1(f: File) -> Result<u64> {
+    score_tournament(f, |opp: &str, me: &str| {
         let (opp, me) = (opp.parse::<Move>()?, me.parse::<Move>()?);
         Ok((me, Outcome::from((me, opp))))
     })
 }
 
-fn part2() -> Result<u64> {
-    score_tournament(|opp: &str, outcome: &str| {
+fn part2(f: File) -> Result<u64> {
+    score_tournament(f, |opp: &str, outcome: &str| {
         let (opp, outcome) = (opp.parse::<Move>()?, outcome.parse::<Outcome>()?);
         let me = Move::from((opp, outcome));
         Ok((me, outcome))
@@ -130,7 +134,32 @@ fn part2() -> Result<u64> {
 }
 
 fn main() -> Result<()> {
-    println!("Score pt1: {}", part1()?);
-    println!("Score pt2: {}", part2()?);
+    println!("Score pt1: {}", part1(open!("input.txt")?)?);
+    println!("Score pt2: {}", part2(open!("input.txt")?)?);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1(open!("test.txt").unwrap()).unwrap(), 15);
+    }
+
+    #[test]
+    fn test_part1_regression() {
+        assert_eq!(part1(open!("input.txt").unwrap()).unwrap(), 15523);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(open!("test.txt").unwrap()).unwrap(), 12);
+    }
+
+    #[test]
+    fn test_part2_regression() {
+        assert_eq!(part2(open!("input.txt").unwrap()).unwrap(), 15702);
+    }
 }
