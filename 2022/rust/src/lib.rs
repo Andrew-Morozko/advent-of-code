@@ -5,6 +5,8 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 
+pub mod extra_itertools;
+
 #[macro_export]
 macro_rules! open {
     ($file_name:expr) => {{
