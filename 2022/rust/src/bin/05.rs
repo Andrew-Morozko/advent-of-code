@@ -9,14 +9,16 @@ use nom::{
     error::{convert_error, VerboseError},
     multi::separated_list1,
     sequence::{delimited, preceded, separated_pair, terminated, tuple},
-    Finish, IResult,
+    Finish,
 };
 use std::{
     fs::File,
     io::{prelude::*, BufReader},
 };
 
-fn one_crate(input: &str) -> IResult<&str, Option<char>, VerboseError<&str>> {
+type Pres<'input, C> = nom::IResult<&'input str, C, VerboseError<&'input str>>;
+
+fn one_crate(input: &str) -> Pres<Option<char>> {
     // "[a]" or "   "
     alt((
         map(delimited(nchar('['), anychar, nchar(']')), Some),
@@ -24,13 +26,13 @@ fn one_crate(input: &str) -> IResult<&str, Option<char>, VerboseError<&str>> {
     ))(input)
 }
 
-fn stacks(input: &str) -> IResult<&str, Vec<Vec<Option<char>>>, VerboseError<&str>> {
+fn stacks(input: &str) -> Pres<Vec<Vec<Option<char>>>> {
     //     [b]
     // [c] [d]
     separated_list1(nchar('\n'), separated_list1(nchar(' '), one_crate))(input)
 }
 
-fn finalized_stacks(input: &str) -> IResult<&str, Vec<Vec<char>>, VerboseError<&str>> {
+fn finalized_stacks(input: &str) -> Pres<Vec<Vec<char>>> {
     //     [b]
     // [c] [d]
     //  1   2
@@ -53,12 +55,12 @@ fn finalized_stacks(input: &str) -> IResult<&str, Vec<Vec<char>>, VerboseError<&
                         .context("Line wider than base")?;
                 }
             }
-            Result::Ok(res)
+            Ok(res)
         },
     )(input)
 }
 
-fn number(input: &str) -> IResult<&str, usize, VerboseError<&str>> {
+fn number(input: &str) -> Pres<usize> {
     map_res(take_while(|c| matches!(c, '0'..='9')), str::parse)(input)
 }
 
@@ -69,7 +71,7 @@ struct Move {
     to: usize,
 }
 
-fn one_move(input: &str) -> IResult<&str, Move, VerboseError<&str>> {
+fn one_move(input: &str) -> Pres<Move> {
     map(
         tuple((
             preceded(tag("move "), number),
@@ -80,7 +82,7 @@ fn one_move(input: &str) -> IResult<&str, Move, VerboseError<&str>> {
     )(input)
 }
 
-fn moves(input: &str) -> IResult<&str, Vec<Move>, VerboseError<&str>> {
+fn moves(input: &str) -> Pres<Vec<Move>> {
     separated_list1(nchar('\n'), one_move)(input)
 }
 
