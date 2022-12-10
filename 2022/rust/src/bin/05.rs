@@ -1,22 +1,18 @@
 use anyhow::{bail, Context, Result};
-use aoc::open;
+use aoc::{open, NomFinish, Pres};
 
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_while},
     character::complete::{anychar, char as nchar},
     combinator::{map, map_res},
-    error::{convert_error, VerboseError},
     multi::separated_list1,
     sequence::{delimited, preceded, separated_pair, terminated, tuple},
-    Finish,
 };
 use std::{
     fs::File,
     io::{prelude::*, BufReader},
 };
-
-type Pres<'input, C> = nom::IResult<&'input str, C, VerboseError<&'input str>>;
 
 fn one_crate(input: &str) -> Pres<Option<char>> {
     // "[a]" or "   "
@@ -87,7 +83,7 @@ fn moves(input: &str) -> Pres<Vec<Move>> {
 }
 
 fn parse(input: &str, should_reverse: bool) -> Result<String> {
-    let res = map(
+    map(
         separated_pair(finalized_stacks, nchar('\n'), moves),
         |(mut s, moves)| -> Result<String> {
             for Move { count, from, to } in moves {
@@ -110,11 +106,7 @@ fn parse(input: &str, should_reverse: bool) -> Result<String> {
             Ok(s.into_iter().map(|s| *s.last().unwrap_or(&' ')).collect())
         },
     )(input)
-    .finish();
-    match res {
-        Ok((_, res)) => res,
-        Err(e) => bail!("Parse error:\n{}", convert_error(input, e)),
-    }
+    .finish(input)?
 }
 
 fn part1(f: File) -> Result<String> {

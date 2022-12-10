@@ -39,3 +39,32 @@ fn resolve_file(src_file: &str, file_name: impl AsRef<Path>) -> Result<PathBuf> 
     task_data_dir.push(file_name);
     Ok(task_data_dir)
 }
+
+pub type Pres<'input, C> = nom::IResult<&'input str, C, nom::error::VerboseError<&'input str>>;
+
+pub trait NomFinish<I, O> {
+    fn finish(self, input: impl AsRef<str>) -> anyhow::Result<O>;
+}
+
+impl<I, O> NomFinish<I, O> for nom::IResult<I, O, nom::error::VerboseError<&str>> {
+    #[inline]
+    fn finish(self, input: impl AsRef<str>) -> anyhow::Result<O> {
+        match nom::Finish::finish(self) {
+            Ok((_rest, res)) => Ok(res),
+            Err(e) => anyhow::bail!(
+                "Parse error:\n{}",
+                nom::error::convert_error(input.as_ref(), e)
+            ),
+        }
+    }
+}
+
+impl<I, O> NomFinish<I, O> for nom::IResult<I, O, nom::error::Error<&str>> {
+    #[inline]
+    fn finish(self, _input: impl AsRef<str>) -> anyhow::Result<O> {
+        match nom::Finish::finish(self) {
+            Ok((_rest, res)) => Ok(res),
+            Err(e) => anyhow::bail!("Parse error: {e}"),
+        }
+    }
+}
